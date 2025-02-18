@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Chain-of-Thought Dataset Visualizer
 
 Chain-of-Thought Dataset Visualizer is an open-source application designed to facilitate the visualization and management of datasets containing chain-of-thought reasoning processes. This tool is particularly valuable for researchers and developers working with large language models and natural language processing tasks, enabling them to explore and interact with datasets efficiently.
@@ -110,3 +111,7 @@ This project is licensed under the Apache License 2.0. For more details, see the
 ---
 
 This README provides a comprehensive guide on how to install and use the Chain-of-Thought Dataset Visualizer, making it accessible for users across different platforms. It also highlights the developer's contributions and additional works, providing context and recognition for the efforts behind the project.
+=======
+# Dataset-CoT-Visualizer
+Chain-of-Thought Dataset Visualizer is an open-source application designed to facilitate the visualization and management of datasets containing chain-of-thought reasoning processes. 
+>>>>>>> 0b2561c8b03583a9cc990ea054a4077c1319c5bb
