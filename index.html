@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset CoT Visualizer Pro</title>
+    <style>
+        :root {
+            --primary-color: #00BFA5;
+            --secondary-color: #00897B;
+            --background-dark: #121212;
+            --surface-dark: #1E1E1E;
+            --text-primary: #E0E0E0;
+            --accent-color: #64FFDA;
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        #container {
+            width: 90vw;
+            min-width: 1200px;
+            max-width: 1600px;
+            background-color: var(--surface-dark);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            padding: 2rem;
+            margin: 1rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #json-manager-container {
+            grid-column: 1 / -1;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            position: relative;
+            min-width: 90%;
+        }
+
+        #json-manager-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        #json-manager-header h2 {
+            color: var(--accent-color);
+            margin-top: 0;
+            font-size: 2.1rem;
+        }
+
+        #language-select-container {
+            position: relative; /* For positioning the dropdown */
+        }
+
+        #language-select {
+            background-color: var(--surface-dark);
+            color: var(--text-primary);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            appearance: none; /* Remove default dropdown styling */
+            -webkit-appearance: none; /* For Safari */
+            -moz-appearance: none; /* For Firefox */
+            -o-appearance: none; /* For Opera */
+            appearance: none;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+            font-size: 1rem;
+        }
+
+        #language-select:hover,
+        #language-select:focus {
+            border-color: var(--primary-color);
+            outline: none; /* Remove focus outline */
+        }
+
+        #loaded-json-list {
+            display: flex;
+            gap: 1rem;
+            padding: 0.5rem 0;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            height: 100;
+            align-items: center;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) transparent;
+            min-width: 100%; /* Asegura que el contenedor ocupe todo el ancho disponible */
+        }
+
+        #loaded-json-list::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        #loaded-json-list::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        #loaded-json-list li {
+            flex: 0 0 240px;
+            height: 60px;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+        }
+
+        #loaded-json-list li:hover {
+            transform: translateY(-5px);
+            background: rgba(var(--primary-color), 0.1);
+            box-shadow: 0 8px 16px rgba(0, 255, 213, 0.2);
+        }
+
+        #loaded-json-list li span {
+            font-size: 0.9rem;
+            overflow: hidden;
+            display: -webkit-box; /* For WebKit browsers */
+            -webkit-line-clamp: 3; /* For WebKit browsers */
+            line-clamp: 3; /* Standard property */
+            -o-line-clamp: 3; /* For older Opera browsers */
+            text-overflow: ellipsis;
+            -webkit-box-orient: vertical;
+            box-orient: vertical;
+            line-height: 1.4;
+        }
+
+        #loaded-json-list li button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(2px);
+            padding: 7px;
+        }
+
+        .scroll-controls {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.5rem;
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+        }
+
+        .scroll-button {
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .scroll-button:hover {
+            background: var(--primary-color);
+        }
+
+        #content-area {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+            height: calc(100vh - 220px);
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        #content-area.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #example-list-container {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        #example-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #example-list li {
+            padding: 1.2rem;
+            margin: 0.8rem 0;
+            background: linear-gradient(145deg, rgba(0, 137, 123, 0.15), rgba(0, 77, 64, 0.15));
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: transform var(--transition-speed) ease;
+            cursor: pointer;
+        }
+
+        #example-list li:hover {
+            transform: translateX(8px);
+            background: linear-gradient(145deg, rgba(0, 137, 123, 0.25), rgba(0, 77, 64, 0.25));
+        }
+
+        #example-list li.selected {
+            background: linear-gradient(145deg, rgba(0, 191, 165, 0.3), rgba(0, 137, 123, 0.3));
+            border-left: 4px solid var(--accent-color);
+        }
+
+        #data-display {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 2rem;
+            height: 90%;
+            overflow-y: auto;
+            width: 95%;
+            min-width: 800px;
+        }
+
+        .question-block {
+            background: linear-gradient(145deg, rgba(0, 137, 123, 0.1), rgba(0, 77, 64, 0.1));
+            border: 1px solid rgba(0, 255, 213, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(5px);
+            max-width: 100%;
+            word-wrap: break-word;
+        }
+
+        .question {
+            font-size: 1.2rem;
+            line-height: 1.4;
+            color: var(--accent-color);
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            padding-right: 1rem;
+        }
+
+        .complex-cot-title {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            margin: 1.5rem 0 0.5rem;
+        }
+
+        .complex-cot p {
+            position: relative;
+            padding-left: 1.5rem;
+            margin: 1rem 0;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.5;
+            max-width: 95%;
+        }
+
+        .complex-cot p::before {
+            content: "➤";
+            position: absolute;
+            left: 0;
+            color: var(--primary-color);
+            margin-right: 0.5rem;
+        }
+
+        .response-title {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            margin: 1.5rem 0 0.5rem;
+            padding-top: 2px;
+        }
+
+        .response {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+            margin-top: 1.6rem;
+            font-size: 1rem;
+            line-height: 1.5;
+            max-width: 95%;
+        }
+
+        .response p { /* Style paragraphs inside response */
+            margin: 0.5rem 0;
+            line-height: 1.5;
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 255, 213, 0.2);
+        }
+
+        #search-input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 255, 213, 0.1);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            width: 98%;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        #pagination-container {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .pagination-button {
+            padding: 0.8rem 1.2rem;
+            min-width: 40px;
+        }
+
+        .pagination-button.active-page {
+            background: linear-gradient(135deg, var(--secondary-color), #004D40);
+        }
+
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        @media (min-width: 1600px) {
+            #container {
+                max-width: 95vw;
+            }
+
+            #data-display {
+                min-width: 1000px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="json-manager-container">
+            <div id="json-manager-header">
+                <h2>Administrador de Datasets</h2>
+                <div id="language-select-container">
+                    <select id="language-select">
+                        <option value="en">English</option>
+                        <option value="es" selected>Español</option>
+                        <option value="zh">中文</option>
+                        <option value="ja">日本語</option>
+                        <option value="ar">العربية</option>
+                        <option value="fr">Français</option>
+                        <option value="it">Italiano</option>
+                        <option value="ko">한국어</option>
+                    </select>
+                </div>
+            </div>
+
+            <ul id="loaded-json-list">
+                <li>Cargando archivos...</li>
+            </ul>
+
+            <div class="scroll-controls">
+                <button class="scroll-button" onclick="scrollHorizontal(-300)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                </button>
+                <button class="scroll-button" onclick="scrollHorizontal(300)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </button>
+            </div>
+
+            <button id="load-new-json-button">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="12" y1="18" x2="12" y2="12"></line>
+                    <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
+                Cargar Nuevo Dataset
+            </button>
+        </div>
+
+        <div id="content-area" class="hidden">
+            <div id="example-list-container">
+                <h2>Ejemplos</h2>
+                <ul id="example-list"></ul>
+            </div>
+
+            <div id="data-display">
+                <div id="search-container">
+                    <input type="text" id="search-input" placeholder="Buscar en el dataset...">
+                </div>
+                <div id="data-container"></div>
+                <div id="pagination-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const loadNewJsonButton = document.getElementById('load-new-json-button');
+        const loadedJsonList = document.getElementById('loaded-json-list');
+        const exampleList = document.getElementById('example-list');
+        const dataContainer = document.getElementById('data-container');
+        const paginationContainer = document.getElementById('pagination-container');
+        const searchInput = document.getElementById('search-input');
+        const contentArea = document.getElementById('content-area');
+        const languageSelect = document.getElementById('language-select');
+        const jsonManagerTitle = document.querySelector('#json-manager-container h2');
+        const exampleListTitle = document.querySelector('#example-list-container h2');
+        const loadFilesListItem = document.querySelector('#loaded-json-list li');
+        const loadNewDatasetButtonText = document.querySelector('#load-new-json-button span');
+        const searchInputPlaceholder = document.getElementById('search-input');
+        const noExamplesMessage = '<p>No hay ejemplos para mostrar en esta página.</p>';
+        const noFilesLoadedMessage = '<li>No hay archivos cargados</li>';
+        const loadingFilesMessage = '<li>Cargando archivos...</li>';
+        const cotUnavailableMessage = '<div class="complex-cot"> <p>Proceso de Razonamiento no disponible para este ejemplo.</p> </div>';
+        const responseUnavailableMessage = '<div class="response"> <p>Respuesta no disponible para este ejemplo.</p> </div>';
+        const cotTitleText = 'Proceso de Razonamiento:';
+        const responseTitleText = 'Respuesta Final:';
+
+        let jsonData = [];
+        let currentPage = 1;
+        const examplesPerPage = 50;
+        let filteredData = [];
+        let currentDataToDisplay = [];
+        let selectedExampleIndex = -1;
+        let loadedJsonFiles = [];
+        let currentLoadedFile = null; // Track currently loaded file path
+        let currentLanguage = localStorage.getItem('language') || 'es'; // Default language is Spanish
+
+        // Translations object
+        const translations = {
+            en: {
+                "Dataset Manager": "Dataset Manager",
+                "Load New Dataset": "Load New Dataset",
+                "Loading files...": "Loading files...",
+                "No files loaded": "No files loaded",
+                "Examples": "Examples",
+                "Search in dataset...": "Search in dataset...",
+                "No examples to show on this page.": "No examples to show on this page.",
+                "Reasoning Process:": "Reasoning Process:",
+                "Reasoning Process unavailable for this example.": "Reasoning Process unavailable for this example.",
+                "Final Response:": "Final Response:",
+                "Response unavailable for this example.": "Response unavailable for this example."
+            },
+            es: {
+                "Dataset Manager": "Administrador de Datasets",
+                "Load New Dataset": "Cargar Nuevo Dataset",
+                "Loading files...": "Cargando archivos...",
+                "No files loaded": "No hay archivos cargados",
+                "Examples": "Ejemplos",
+                "Search in dataset...": "Buscar en el dataset...",
+                "No examples to show on this page.": "No hay ejemplos para mostrar en esta página.",
+                "Reasoning Process:": "Proceso de Razonamiento:",
+                "Reasoning Process unavailable for this example.": "Proceso de Razonamiento no disponible para este ejemplo.",
+                "Final Response:": "Respuesta Final:",
+                "Response unavailable for this example.": "Respuesta no disponible para este ejemplo."
+            },
+            zh: {
+                "Dataset Manager": "数据集管理器",
+                "Load New Dataset": "加载新数据集",
+                "Loading files...": "正在加载文件...",
+                "No files loaded": "没有加载文件",
+                "Examples": "例子",
+                "Search in dataset...": "在数据集中搜索...",
+                "No examples to show on this page.": "此页没有例子显示。",
+                "Reasoning Process:": "推理过程：",
+                "Reasoning Process unavailable for this example.": "此例中没有可用的推理过程。",
+                "Final Response:": "最终回应：",
+                "Response unavailable for this example.": "此例中没有可用的回应。"
+            },
+            ja: {
+                "Dataset Manager": "データセットマネージャー",
+                "Load New Dataset": "新しいデータセットをロード",
+                "Loading files...": "ファイルをロード中...",
+                "No files loaded": "ファイルがロードされていません",
+                "Examples": "例",
+                "Search in dataset...": "データセット内を検索...",
+                "No examples to show on this page.": "このページには表示する例がありません。",
+                "Reasoning Process:": "推論プロセス：",
+                "Reasoning Process unavailable for this example.": "この例では推論プロセスは利用できません。",
+                "Final Response:": "最終応答：",
+                "Response unavailable for this example.": "この例では応答は利用できません。"
+            },
+            ar: {
+                "Dataset Manager": "مدير مجموعة البيانات",
+                "Load New Dataset": "تحميل مجموعة بيانات جديدة",
+                "Loading files...": "جاري تحميل الملفات...",
+                "No files loaded": "لا توجد ملفات محملة",
+                "Examples": "أمثلة",
+                "Search in dataset...": "البحث في مجموعة البيانات...",
+                "No examples to show on this page.": "لا توجد أمثلة لعرضها في هذه الصفحة.",
+                "Reasoning Process:": "عملية التفكير:",
+                "Reasoning Process unavailable for this example.": "عملية التفكير غير متوفرة لهذا المثال.",
+                "Final Response:": "الرد النهائي:",
+                "Response unavailable for this example.": "الرد غير متوفر لهذا المثال."
+            },
+            fr: {
+                "Dataset Manager": "Gestionnaire de Datasets",
+                "Load New Dataset": "Charger un Nouveau Dataset",
+                "Loading files...": "Chargement des fichiers...",
+                "No files loaded": "Aucun fichier chargé",
+                "Examples": "Exemples",
+                "Search in dataset...": "Rechercher dans le dataset...",
+                "No examples to show on this page.": "Aucun exemple à afficher sur cette page.",
+                "Reasoning Process:": "Processus de Raisonnement :",
+                "Reasoning Process unavailable for this example.": "Processus de raisonnement non disponible pour cet exemple.",
+                "Final Response:": "Réponse Finale :",
+                "Response unavailable for this example.": "Réponse non disponible pour cet exemple."
+            },
+            it: {
+                "Dataset Manager": "Gestore Dataset",
+                "Load New Dataset": "Carica Nuovo Dataset",
+                "Loading files...": "Caricamento file...",
+                "No files loaded": "Nessun file caricato",
+                "Examples": "Esempi",
+                "Search in dataset...": "Cerca nel dataset...",
+                "No examples to show on this page.": "Nessun esempio da mostrare in questa pagina.",
+                "Reasoning Process:": "Processo di Ragionamento:",
+                "Reasoning Process unavailable for this example.": "Processo di ragionamento non disponibile per questo esempio.",
+                "Final Response:": "Risposta Finale:",
+                "Response unavailable for this example.": "Risposta non disponibile per questo esempio."
+            },
+            ko: {
+                "Dataset Manager": "데이터셋 관리자",
+                "Load New Dataset": "새 데이터셋 로드",
+                "Loading files...": "파일 로드 중...",
+                "No files loaded": "로드된 파일 없음",
+                "Examples": "예시",
+                "Search in dataset...": "데이터셋에서 검색...",
+                "No examples to show on this page.": "이 페이지에 표시할 예시가 없습니다.",
+                "Reasoning Process:": "추론 과정:",
+                "Reasoning Process unavailable for this example.": "이 예시에는 추론 과정을 사용할 수 없습니다.",
+                "Final Response:": "최종 응답:",
+                "Response unavailable for this example.": "이 예시에는 응답을 사용할 수 없습니다."
+            }
+        };
+
+        // Function to set the language
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            localStorage.setItem('language', lang);
+            languageSelect.value = lang; // Keep dropdown in sync
+
+            // Update UI elements with translations
+            jsonManagerTitle.textContent = translations[lang]["Dataset Manager"];
+            exampleListTitle.textContent = translations[lang]["Examples"];
+            loadFilesListItem.textContent = translations[lang]["Loading files..."];
+            loadNewJsonButton.childNodes[2].textContent = translations[lang]["Load New Dataset"]; // Accessing the text node
+            searchInputPlaceholder.placeholder = translations[lang]["Search in dataset..."];
+
+            // Update messages that might be dynamically inserted
+            noExamplesMessageTranslated = `<p>${translations[lang]["No examples to show on this page."]}</p>`;
+            noFilesLoadedMessageTranslated = `<li>${translations[lang]["No files loaded"]}</li>`;
+            loadingFilesMessageTranslated = `<li>${translations[lang]["Loading files..."]}</li>`;
+            cotUnavailableMessageTranslated = `<div class="complex-cot"> <p>${translations[lang]["Reasoning Process unavailable for this example."]}</p> </div>`;
+            responseUnavailableMessageTranslated = `<div class="response"> <p>${translations[lang]["Response unavailable for this example."]}</p> </div>`;
+            cotTitleTextTranslated = translations[lang]["Reasoning Process:"];
+            responseTitleTextTranslated = translations[lang]["Final Response:"];
+
+            // Re-render UI components that display translated text (if needed, in this case mostly messages)
+            updateFileListUI(); // Update "No files loaded" message if needed
+            updatePagination(); // Re-render examples list and data display to potentially update messages
+        }
+
+        // Event listener for language selection
+        languageSelect.addEventListener('change', (event) => {
+            setLanguage(event.target.value);
+        });
+
+        // Set initial language on page load
+        setLanguage(currentLanguage);
+
+        // Cargar lista de archivos al iniciar
+        loadJsonFileList();
+
+        async function loadJsonFileList() {
+            const storedFiles = localStorage.getItem('loadedJsonFiles');
+            loadedJsonFiles = storedFiles ? JSON.parse(storedFiles) : [];
+            updateFileListUI();
+        }
+
+        function updateFileListUI() {
+            loadedJsonList.innerHTML = loadedJsonFiles.length > 0
+                ? loadedJsonFiles.map((file, index) => `
+                    <li title="${file}" data-index="${index}">
+                        <span>${file.split(/[\\/]/).pop()}</span>
+                        <button onclick="deleteJsonFile(event, ${index})" title="Eliminar Dataset">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </li>
+                `).join('')
+                : noFilesLoadedMessageTranslated; // Use translated "No files loaded" message
+
+            Array.from(loadedJsonList.children).forEach((li, index) => {
+                li.addEventListener('click', (event) => {
+                    if (event.target.tagName !== 'BUTTON' && !event.target.closest('button')) { // Prevent loading file when delete button is clicked
+                        loadSelectedFile(loadedJsonFiles[index]);
+                    }
+                });
+            });
+        }
+
+        window.deleteJsonFile = (event, index) => {
+            event.stopPropagation(); // Prevent li click event
+            const fileToDelete = loadedJsonFiles[index];
+            loadedJsonFiles.splice(index, 1);
+            localStorage.setItem('loadedJsonFiles', JSON.stringify(loadedJsonFiles));
+            updateFileListUI();
+
+            if (currentLoadedFile === fileToDelete) {
+                dataContainer.innerHTML = ''; // Clear displayed data
+                contentArea.classList.add('hidden'); // Hide content area
+                currentLoadedFile = null; // Reset current loaded file
+                jsonData = []; // Clear current json data
+                filteredData = []; // Clear filtered data
+                currentDataToDisplay = []; // Clear data to display
+            } else if (loadedJsonFiles.length > 0) {
+                // If there are still files, load the first one
+                loadSelectedFile(loadedJsonFiles[0]);
+            } else {
+                dataContainer.innerHTML = ''; // Clear displayed data
+                contentArea.classList.add('hidden'); // Hide content area
+                currentLoadedFile = null; // Reset current loaded file
+                jsonData = []; // Clear current json data
+                filteredData = []; // Clear filtered data
+                currentDataToDisplay = []; // Clear data to display
+                updateFileListUI(); // Ensure "No files loaded" message is shown
+            }
+        };
+
+        async function loadSelectedFile(filePath) {
+            try {
+                const response = await fetch(`file://${filePath}`);
+                jsonData = await response.json();
+                currentLoadedFile = filePath; // Update currently loaded file
+                initializeData();
+                contentArea.classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading file:', error);
+                alert('Error al cargar el archivo. Verifica la consola para más detalles.'); // Keep alert in Spanish as it might be a system message
+            }
+        }
+
+        function initializeData() {
+            filteredData = [...jsonData];
+            currentPage = 1;
+            updatePagination();
+            setupSearch();
+        }
+
+        function setupSearch() {
+            searchInput.addEventListener('input', () => performSearch());
+        }
+
+        function performSearch() {
+            const term = searchInput.value.toLowerCase();
+            filteredData = jsonData.filter(item =>
+                item.Question.toLowerCase().includes(term) ||
+                (item.Complex_CoT && item.Complex_CoT.toLowerCase().includes(term))
+            );
+            currentPage = 1;
+            updatePagination();
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredData.length / examplesPerPage);
+            currentDataToDisplay = filteredData.slice(
+                (currentPage - 1) * examplesPerPage,
+                currentPage * examplesPerPage
+            );
+
+            updateExamplesList();
+            updatePaginationControls(totalPages);
+            if (currentDataToDisplay.length > 0) {
+                displayExampleDetails(currentDataToDisplay[0]);
+            } else {
+                dataContainer.innerHTML = noExamplesMessageTranslated; // Use translated "No examples" message
+            }
+        }
+
+        function updateExamplesList() {
+            exampleList.innerHTML = currentDataToDisplay
+                .map((item, index) => `
+                    <li class="${index === 0 ? 'selected' : ''}">
+                        ${item.Question.substring(0, 80)}${item.Question.length > 80 ? '...' : ''}
+                    </li>
+                `).join('');
+
+            Array.from(exampleList.children).forEach((li, index) => {
+                li.addEventListener('click', () => {
+                    document.querySelectorAll('#example-list li').forEach(el => el.classList.remove('selected'));
+                    li.classList.add('selected');
+                    displayExampleDetails(currentDataToDisplay[index]);
+                });
+            });
+        }
+
+        function displayExampleDetails(item) {
+            console.log("Ejemplo actual:", item);
+
+            let complexCoTSection = '';
+            let responseSection = '';
+
+            if (item.Complex_CoT) {
+                let cotText = item.Complex_CoT;
+                // Replace **bold text** with <strong>bold text</strong>
+                cotText = cotText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+                const cotLines = cotText.split('\n');
+
+                let stepsHTML = '';
+                let isStepFormat = false;
+
+                cotLines.forEach(line => {
+                    const stepMatch = line.match(/^(\d+\.)?\s*(.+)/);
+                    if (stepMatch) {
+                        isStepFormat = true;
+                        const stepNumber = stepMatch[1] ? stepMatch[1].trim() : '';
+                        const stepText = stepMatch[2].trim();
+                        stepsHTML += `<p>${stepNumber ? `${stepNumber} ` : ''}${stepText}</p>`;
+                    } else {
+                        stepsHTML += `<p>${line.trim()}</p>`;
+                    }
+                });
+
+                complexCoTSection = `
+                    <div class="complex-cot-title">${cotTitleTextTranslated}</div>
+                    <div class="complex-cot" ondblclick="makeEditable(event, 'complex_cot')">
+                        ${stepsHTML}
+                    </div>
+                `;
+            } else {
+                complexCoTSection = cotUnavailableMessageTranslated; // Use translated "CoT unavailable" message
+            }
+
+            if (item.Response) {
+                let responseText = item.Response;
+                // Replace **bold text** with <strong>bold text</strong> in response
+                responseText = responseText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+                const responseLines = responseText.split('\n');
+                let responseHTML = '';
+                responseLines.forEach(line => {
+                    responseHTML += `<p>${line.trim()}</p>`;
+                });
+
+                responseSection = `
+                    <div class="response-title">${responseTitleTextTranslated}</div>
+                    <div class="response" ondblclick="makeEditable(event, 'response')">
+                        ${responseHTML}
+                    </div>
+                `;
+            } else {
+                responseSection = responseUnavailableMessageTranslated; // Use translated "Response unavailable" message
+            }
+
+            dataContainer.innerHTML = `
+                <div class="question-block">
+                    <div class="question" ondblclick="makeEditable(event, 'question')">${item.Question}</div>
+                    ${complexCoTSection}
+                    ${responseSection}
+                </div>
+            `;
+        }
+
+        function makeEditable(event, type) {
+            const target = event.currentTarget;
+            const textContent = target.innerHTML;
+            const textarea = document.createElement('textarea');
+            textarea.value = textContent;
+            textarea.style.width = '100%';
+            textarea.style.height = '100%';
+            textarea.style.resize = 'none';
+            textarea.style.padding = '1rem';
+            textarea.style.border = '1px solid var(--accent-color)';
+            textarea.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+            textarea.style.color = 'white';
+            textarea.style.fontSize = '1rem';
+            textarea.style.lineHeight = '1.5';
+
+            target.innerHTML = '';
+            target.appendChild(textarea);
+            textarea.focus();
+
+            textarea.addEventListener('blur', () => {
+                const newContent = textarea.value;
+                target.innerHTML = newContent;
+                updateItemContent(type, newContent);
+            });
+        }
+
+        function updateItemContent(type, newContent) {
+            const selectedExample = currentDataToDisplay[selectedExampleIndex];
+            if (type === 'question') {
+                selectedExample.Question = newContent;
+            } else if (type === 'complex_cot') {
+                selectedExample.Complex_CoT = newContent;
+            } else if (type === 'response') {
+                selectedExample.Response = newContent;
+            }
+            // Update the JSON data in memory
+            jsonData[jsonData.indexOf(selectedExample)] = selectedExample;
+        }
+
+        function updatePaginationControls(totalPages) {
+            paginationContainer.innerHTML = `
+                <button class="pagination-button" ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(1)">«</button>
+                <button class="pagination-button" ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">‹</button>
+
+                ${Array.from({length: totalPages}, (_, i) => i + 1)
+                    .slice(Math.max(0, currentPage - 3), Math.min(totalPages, currentPage + 2))
+                    .map(page => `
+                        <button class="pagination-button ${page === currentPage ? 'active-page' : ''}"
+                                onclick="changePage(${page})">
+                            ${page}
+                        </button>
+                    `).join('')}
+
+                <button class="pagination-button" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">›</button>
+                <button class="pagination-button" ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${totalPages})">»</button>
+            `;
+        }
+
+        window.changePage = (newPage) => {
+            if (newPage < 1 || newPage > Math.ceil(filteredData.length / examplesPerPage)) return;
+            currentPage = newPage;
+            updatePagination();
+        };
+
+        // Manejar carga de nuevos archivos
+        loadNewJsonButton.addEventListener('click', async () => {
+            try {
+                const filePaths = await window.electronAPI.openFileDialog();
+                if (filePaths && filePaths.length > 0) {
+                    const filePath = filePaths[0];
+                    if (!loadedJsonFiles.includes(filePath)) {
+                        loadedJsonFiles.push(filePath);
+                        localStorage.setItem('loadedJsonFiles', JSON.stringify(loadedJsonFiles));
+                        updateFileListUI();
+                    }
+                    loadSelectedFile(filePath);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Error: ${error.message}`); // Keep alert in Spanish as it might be a system message
+            }
+        });
+
+        function scrollHorizontal(amount) {
+            const list = document.getElementById('loaded-json-list');
+            list.scrollBy({
+                left: amount,
+                behavior: 'smooth'
+            });
+        }
+    </script>
+
+    <!-- Electron API (if needed, for file dialog - ensure this is correctly set up in your main process) -->
+
+    <script>
+        if (typeof window.electronAPI !== 'undefined') {
+            // Electron API is available, you can use it
+            console.log('Electron API available');
+        } else {
+            // Electron API is not available (running in a browser)
+            console.warn('Electron API not available. File dialog will not work if running in a browser.');
+            window.electronAPI = { // Mock electronAPI for browser testing - remove for electron app
+                openFileDialog: async () => {
+                    return new Promise(resolve => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = '.json';
+                        input.onchange = (event) => {
+                            const file = event.target.files[0];
+                            if (file) {
+                                resolve([file.path]); // Return a path similar to electron
+                            } else {
+                                resolve(null);
+                            }
+                        };
+                        input.click();
+                    });
+                }
+            };
+        }
+    </script>
+</body>
+</html>
